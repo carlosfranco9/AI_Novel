@@ -18,19 +18,11 @@ from bs4 import BeautifulSoup
 
 # --- LLM API Configuration ---
 # 请根据你的环境配置这些设置
-<<<<<<< Updated upstream
-VLLM_SERVER_HOST = ""
-VLLM_SERVER_PORT = ""
-OPENAI_API_ENDPOINT_PATH = "/v1/chat/completions"
-TARGET_API_URL = f"http://{VLLM_SERVER_HOST}:{VLLM_SERVER_PORT}{OPENAI_API_ENDPOINT_PATH}"
-SERVED_MODEL_IDENTIFIER = ''
-=======
 VLLM_SERVER_HOST = "ip"
 VLLM_SERVER_PORT = "port"
 OPENAI_API_ENDPOINT_PATH = "/v1/chat/completions"
 TARGET_API_URL = f"http://{VLLM_SERVER_HOST}:{VLLM_SERVER_PORT}{OPENAI_API_ENDPOINT_PATH}"
 SERVED_MODEL_IDENTIFIER = 'models'
->>>>>>> Stashed changes
 API_HEADERS = {
     "Content-Type": "application/json",
     # "Authorization": "Bearer YOUR_API_KEY" # 如果需要，请添加你的API密钥
@@ -788,6 +780,7 @@ class TaskManager:
                     if item.id != task_id: new_q.put(item)
                 self.task_queue = new_q
                 log_message(f"Task '{task.topic}' removed from queue.", task.id)
+                self._save_tasks_state()
                 return True, "Task removed from queue."
             return False, f"Task is already {task.status}."
 
@@ -922,8 +915,12 @@ def get_project_details_api(type, project_name):
     if not os.path.exists(project_path): return jsonify({"error": "Project not found"}), 404
     
     if type == 'novel':
+        # 获取_mind_library 中的task.json 中的taskId 一同返回
+        taskFile = os.path.join(project_path, MIND_LIBRARY_DIR_NAME, TASK_LIBRARY_FILE_NAME)
+        with open(taskFile, 'r', encoding='utf-8') as f:
+            taskId = json.load(f)
         files = sorted([f for f in os.listdir(project_path) if f.endswith('.md')])
-        return jsonify({"name": project_name, "tree": files})
+        return jsonify({"name": project_name, "tree": files, "taskId": taskId})
     else: # Course
         tree = {}
         for chapter in sorted([d for d in os.listdir(project_path) if os.path.isdir(os.path.join(project_path, d)) and d != WORLDVIEW_DIR_NAME]):
